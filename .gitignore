@@ -1,0 +1,4 @@
+tmp/*
+logs/*.log
+public_html/swagger/ui/*
+public_html/swagger/editor/*

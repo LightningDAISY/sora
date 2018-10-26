@@ -1,0 +1,12 @@
+# resty redis
+luarocks install luarestyredis
+
+# template
+luarocks install template
+
+# FS
+luarocks install luafilesystem
+
+# Regex
+luarocks install lrexlib-pcre
+
