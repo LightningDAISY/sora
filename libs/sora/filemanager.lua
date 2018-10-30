@@ -24,6 +24,7 @@ function FileManager:rename(oldName, newName)
 	local oldPath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. oldName
 	local newPath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. newName
 	if self.ext then oldPath = oldPath .. self.ext end
+	oldPath = ngx.unescape_uri(oldPath)
 
 	return os.rename(oldPath, newPath)
 end
@@ -31,6 +32,7 @@ end
 function FileManager:remove(filePath)
 	local path = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. filePath
 	if self.ext then path = path .. self.ext end
+	path = ngx.unescape_uri(path)
 	return os.remove(path)
 end
 

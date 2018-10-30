@@ -1,5 +1,6 @@
 function basicRequest(method, uri, data)
 {
+	uri = encodeURI(uri)
 	const form = new FormData()
 	if(data)
 	{
