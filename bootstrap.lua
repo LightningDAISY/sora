@@ -95,6 +95,7 @@ local function main()
 	local SoraRouter = require "sora.router"
 	local router = SoraRouter:new(req, ControllerConfig)
 	local controller, method, params, authType, controllerRole = router:autoRouteCache()
+	controller.templateFileName = ""
 	if not controller then
 		controller, method, params, authType, controllerRole = router:autoRoute()
 		if not controller then throw(404, req:path() .. " is not found.") end

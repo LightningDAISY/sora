@@ -66,7 +66,6 @@ function C:list(params)
 	ngx.header["X-Parent-Path"] = self.fileManager:getParentUri(requestPath)
 	ngx.header["Content-Type"] = "application/json"
 	ngx.say(cjson.encode(list))
-	self.templateFileName = ""
 end
 
 return C
