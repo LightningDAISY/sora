@@ -64,6 +64,7 @@ function SoraRouter:autoRouteCache()
 	replacedURI = replacedURIs[1]:gsub("/$", "") .. "/"
 
 	-- remove & set extension(s)
+	self.req.format = nil
 	local method,extension = replacedURI:match("([^/%.]+)(%.[^/]+)/$")
 	if extension then
 		replacedURI = replacedURI:gsub(extension .. "/$", "/")
