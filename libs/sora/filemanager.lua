@@ -13,7 +13,6 @@ function FileManager.new(o, ext)
 			__index = parent
 		}
 	)
-
 	return o
 end
 
@@ -25,7 +24,6 @@ function FileManager:rename(oldName, newName)
 	local newPath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. newName
 	if self.ext then oldPath = oldPath .. self.ext end
 	oldPath = ngx.unescape_uri(oldPath)
-
 	return os.rename(oldPath, newPath)
 end
 
@@ -79,6 +77,7 @@ function FileManager:upload(path, reqParams)
 	if not reqParams or not reqParams.newFile or not reqParams.newFile.name then
 		throw "newFile is empty"
 	end
+	path = ngx.unescape_uri(path)
 
 	local filePath = _G.BaseDir .. "/" .. self.config.dir.file
 	if path:len() > 0 then
@@ -94,6 +93,7 @@ end
 function FileManager:list(path)
 	local result = {}
 	if path == "/" then path = "" end
+	path = ngx.unescape_uri(path)
 	local basePath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. path
 	local fileNames = {}
 	for fileName in lfs.dir(basePath) do
