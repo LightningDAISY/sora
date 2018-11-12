@@ -30,8 +30,9 @@ traceback = true
 
 --package.path = package.path .. ";./libs/?.lua;"
 package.path =	_G.BaseDir .. "/libs/?.lua;" ..
-				"/usr/local/openresty/lualib/?.lua;" .. -- <-about "resty/upload.lua" is not found
-				package.path 
+		_G.BaseDir .. "/?.lua;" ..
+		--"/usr/local/openresty/lualib/?.lua;" .. -- <-about "resty/upload.lua" is not found
+		package.path 
 
 local AuthTypes = {
 	admin = {
