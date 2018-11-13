@@ -1,13 +1,11 @@
 local SoraBase = {}
 
-local configPath = "etc/config.js"
-
 function SoraBase.new(o, req)
 	o = o or {}
 	if req then o.req = req end
 	local SoraConfig = require "sora.config"
 	local config = SoraConfig:new()
-	o.config = config:loadconfig(_G.BaseDir .. "/" .. configPath)
+	o.config = config:loadconfig()
 	o.time = 0
 	return o
 end

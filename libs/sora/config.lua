@@ -6,6 +6,7 @@ function SoraConfig.new(o)
 end
 
 function SoraConfig:loadconfig(filename)
+	filename = filename or _G.BaseDir .. "/etc/config.js"
 	local util = require("sora.util")
 	return util.loadJS(filename)
 end

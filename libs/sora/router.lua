@@ -3,7 +3,7 @@ local SoraRouter = {}
 function SoraRouter.new(o, req, controllerConfig)
 	o = o or {}
 	o.controllerConfig = controllerConfig
-	o.rediskey = "LuaRouter"
+	-- o.rediskey = "LuaRouter"
 
 	local base = require "sora.base"
 	local parent = base:new(req)
@@ -13,6 +13,7 @@ function SoraRouter.new(o, req, controllerConfig)
 			__index = parent
 		}
 	)
+	o.rediskey = o.config.router.rediskey
 	return o
 end
 
@@ -55,35 +56,25 @@ function SoraRouter:redisConnect()
 	return redis
 end
 
-function SoraRouter:autoRouteCache()
-	local controllerDir = _G.BaseDir .. "/" .. self.config.dir.controller
-	local util = require "libs.sora.util"
-	local replacedURI = self.req:path():gsub(self.config.uri.base, "")
-	local replacedURIs = util.split(replacedURI, "%?", 2)
-	if not replacedURIs[1] then replacedURIs[1] = "/" end
-	replacedURI = replacedURIs[1]:gsub("/$", "") .. "/"
+function SoraRouter:getRouteByVariable(requestedUri)
+	local util = require "sora.util"
+	local parts = util.split(requestedUri, "/")
+	local lastURI = ""
+	local nextURI = ""
 
-	-- remove & set extension(s)
-	self.req.format = nil
-	local method,extension = replacedURI:match("([^/%.]+)(%.[^/]+)/$")
-	if extension then
-		replacedURI = replacedURI:gsub(extension .. "/$", "/")
-		self.req.format = extension
+	for i=#parts, 2, -1 do
+		local longestUri = table.concat(parts, "/") .. "/"
+		if _G.routeCache[longeestUri] then
+			lastURI = _G.routeCache[longeestUri]
+			break
+		end
+		nextURI = longestUri
+		table.remove(parts, i)
 	end
+	return {lastURI, nextURI}
+end
 
-	local parts = util.split(replacedURI, "/")
-	table.remove(parts,1) -- shift
-
-	if #parts < 1 then
-		parts = { "index" }
-	end
-
-	if parts[#parts]:match("%.") then
-		local names = util.split(parts[#parts], "%.", 2)
-		parts[#parts]   = names[1]
-		self.req.format = parts[2]
-	end
-
+function SoraRouter:getRouteByRedis(requestedUri)
 	local scriptBody = [=[
 local function split(str,pattern,limiter)
 	limiter = limiter or nil
@@ -129,11 +120,47 @@ return {lastURI, nextURI}
 	]=]
 	scriptBody = scriptBody:gsub("\r?\n", " "):gsub("\t", " ")
 	local redis = self:redisConnect()
-
 	if not redis then throw("cannot connect redis!!") end
-
 	local redishash = redis:loadScript(scriptBody, "router")
-	local result = redis:evalsha("router", { replacedURI })
+	return redis:evalsha("router", { requestedUri })
+end
+
+function SoraRouter:autoRouteCache()
+	local controllerDir = _G.BaseDir .. "/" .. self.config.dir.controller
+	local util = require "libs.sora.util"
+	local replacedURI = self.req:path():gsub(self.config.uri.base, "")
+	local replacedURIs = util.split(replacedURI, "%?", 2)
+	if not replacedURIs[1] then replacedURIs[1] = "/" end
+	replacedURI = replacedURIs[1]:gsub("/$", "") .. "/"
+
+
+	-- remove & set extension(s)
+	self.req.format = nil
+	local method,extension = replacedURI:match("([^/%.]+)(%.[^/]+)/$")
+	if extension then
+		replacedURI = replacedURI:gsub(extension .. "/$", "/")
+		self.req.format = extension
+	end
+
+	local parts = util.split(replacedURI, "/")
+	table.remove(parts,1) -- shift
+
+	if #parts < 1 then
+		parts = { "index" }
+	end
+
+	if parts[#parts]:match("%.") then
+		local names = util.split(parts[#parts], "%.", 2)
+		parts[#parts]   = names[1]
+		self.req.format = parts[2]
+	end
+
+	local result = nil
+	if self.rediskey then
+		result = self:getRouteByRedis(replacedURI)
+	else
+		result = self:getRouteByVariable(replacedURI)
+	end
 	if not result then return nil end
 	local lastURI = result[1]
 	local nextURI = result[2]
@@ -144,7 +171,11 @@ return {lastURI, nextURI}
 	if lastURI:len() == replacedURI:len() then
 		--実体なし
 		if not util.fileExists(lastFilePath) then
-			redis:hdel(self.rediskey, lastURI)
+			if self.rediskey then
+				redis:hdel(self.rediskey, lastURI)
+			else
+				_G.routeCache[lastURI] = nil
+			end
 			return nil
 		end
 	elseif lastURI:len() > replacedURI:len() then
@@ -240,9 +271,13 @@ function SoraRouter:autoRoute()
 			   table.concat(parts, "/")
 		if util.fileExists(path .. ".lua") then
 			--begin cache
-			local redis = self:redisConnect()
-			redis:hset(self.rediskey, "/" .. table.concat(parts, "/") .. "/", "1")
-			--end cache
+			if self.rediskey then
+				local redis = self:redisConnect()
+				redis:hset(self.rediskey, "/" .. table.concat(parts, "/") .. "/", "1")
+				--end cache
+			else
+				_G.routeCache["/" .. table.concat(parts, "/") .. "/"] = 1
+			end
 			requirePath = self.config.dir.controller .. "." .. table.concat(parts, ".")
 			break
 		end

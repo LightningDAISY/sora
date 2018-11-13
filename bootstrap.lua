@@ -2,6 +2,7 @@
 
 -- ControllerConfigにURIと認証情報を記述します。
 -- キーがURIの先頭確定部分、値のauthTypeに使用する認証機構(AuthTypesで定義)、roleに10までのroleを設定します。
+-- roleは参照に必要な権限で、1が最高、10が最低です。
 -- 完全な公開ページなら、何も書かない({})か、roleのみ10に設定します。
 --
 --     ["/public/"] = { role = 10 },
@@ -16,13 +17,15 @@
 --     }
 --
 -- この場合、routerからはindexとtomd5以外へのリクエストがnot foundになります。
-
+-- ControllerMethodsを書かないか、{}を渡した場合、アンダースコアで始まっていないメソッドは
+-- 全てリクエストURIとして有効になります。
+--
 local ControllerConfig = {
+	["/"]       = { role = 10, authType = "user" },
 	["/admin/"] = { role = 10, authType = "admin" },
 	["/docs/"]  = { role = 10 },
-	["/"]       = { role = 10, authType = "user" },
 	["/setup/"] = { role = 10 },
-	["/file/"] = { role = 10 },
+	["/file/"]  = { role = 10 },
 }
 
 _G.BaseDir = "/var/www/sora"
@@ -33,6 +36,8 @@ package.path =	_G.BaseDir .. "/libs/?.lua;" ..
 		_G.BaseDir .. "/?.lua;" ..
 		--"/usr/local/openresty/lualib/?.lua;" .. -- <-about "resty/upload.lua" is not found
 		package.path 
+
+require "sora.init"
 
 local AuthTypes = {
 	admin = {
@@ -144,7 +149,7 @@ local function main()
 	local newController = controller[method](controller,params)
 	if newController and newController.overwrite then controller = newController end
 	local SoraView = require "sora.view"
-	if not controller.stash.userId   then controller.stash.userId   = userId   end
+	if not controller.stash.userId then controller.stash.userId   = userId   end
 	local view = SoraView:new(req, controller)
 	view:render()
 end
