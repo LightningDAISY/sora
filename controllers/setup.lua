@@ -79,7 +79,27 @@ function C:createUserSession(table)
 		{
 			"ENGINE", "InnoDB",
 			"DEFAULT CHARSET", "utf8",
-			"COMMENT", "'管理者セッション'"
+			"COMMENT", "'ユーザセッション'"
+		}
+	)
+end
+
+function C:createPathFreeze(table)
+	return table:create(
+		"pathFreeze",
+		{
+			"path",      "varchar(255) NOT NULL COMMENT '親URI ex./dir'",
+			"fileName",  "varchar(255) NOT NULL COMMENT 'ファイル名'",
+			"userId",    "int unsigned NOT NULL COMMENT 'ユーザID'",
+			"expiredAt", "int unsigned NOT NULL DEFAULT '0' COMMENT '有効期限'",
+			"createdAt", "bigint unsigned NOT NULL COMMENT '作成日時'",
+			"updatedAt", "bigint unsigned NOT NULL COMMENT '更新日時'",
+			"PRIMARY KEY", "(path, fileName)"
+		},
+		{
+			"ENGINE", "InnoDB",
+			"DEFAULT CHARSET", "utf8",
+			"COMMENT", "'ファイルの凍結用。凍結者本人と、凍結者よりRoleが小さいユーザは解除可。'"
 		}
 	)
 end
@@ -116,6 +136,12 @@ function C:index(params)
 		self:createUserSession(mysqlSetup)
 	end
 
+	-- path_freeze
+	if mysqlSetup:isExists("pathFreeze") then
+		self.stash.mysqlHasTable.pathFreeze = 1
+	else
+		self:createPathFreeze(mysqlSetup)
+	end
 end
 
 return C

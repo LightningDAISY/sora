@@ -71,7 +71,7 @@ local AuthTypes = {
 			--self.userにテーブルuser_baseの各フィールド。
 		},
 		status = {
-			method   = "_getUserBase"
+			method   = "_getUserInfo"
 		},
 	},
 }

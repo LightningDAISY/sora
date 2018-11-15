@@ -9,7 +9,7 @@
 				<fieldset>
 					<legend>Sign up</legend>
 					<p>
-						<label for="login-username">Name <small>is Private</small></label>
+						<label for="login-username">Login Name</label>
 						<input id="login-username" name="username" value="<? if username then ?><% username %><? end ?>" type="text" placeholder="User Name" />
 					</p>
 					<p>
@@ -17,7 +17,7 @@
 						<input id="login-password" name="password" value="<? if password then ?><% password %><? end ?>" type="password" placeholder="Password" />
 					</p>
 					<p>
-						<label for="nickname">Nickname <small>Your Public Name</small></label>
+						<label for="nickname">Nickname <small>Public Name</small></label>
 						<input id="nickname" name="nickname" value="<? if nickname then ?><% nickname %><? end ?>" type="text" placeholder="Nickname" />
 					</p>
 					<p>

@@ -29,7 +29,9 @@ function M.new(o,isSingleton,isSetup)
 end
 
 function M:isExists(tableName)
-	return self:describe(tableName)
+	local desc = self:describe(tableName)
+	self:_errorLog(self:_dump(desc))
+	if desc[1] then return true else return false end
 end
 
 return M

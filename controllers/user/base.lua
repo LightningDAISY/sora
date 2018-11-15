@@ -73,6 +73,16 @@ function C:_getUserDetail(userId)
 	return detail:getUserData(userId)
 end
 
+function C:_getUserInfo(userId)
+	local base = self:_getUserBase(userId)
+	if not base then return end
+	local detail = self:_getUserDetail(userId) or {}
+	for key,val in pairs(detail) do
+		base[key] = val
+	end
+	return base
+end
+
 --
 -- user_session
 --

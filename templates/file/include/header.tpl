@@ -20,6 +20,6 @@
 			<? end ?>
 		</div>
 		<? if user then ?>
-			<div>こんにちは <% user.userName %>さん</div>
+			<div>こんにちは <% user.nickname %>さん</div>
 		<? end ?>
 	</div>
