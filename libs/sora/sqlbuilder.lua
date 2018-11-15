@@ -357,7 +357,7 @@ function luaqub:escapeValue(value)
 		return value
 	end
 
-	if #value < 1 then return """" end
+	if #value < 1 then return "''" end
 
 	if not value then return "NULL" end
 	if not value:match("%D") then
@@ -365,7 +365,7 @@ function luaqub:escapeValue(value)
 	end
 
 	value = value:gsub("\\", "\\\\")
-	return """ .. value:gsub(""", "\\"") .. """
+	return "'" .. value:gsub("'", "\\'") .. "'"
 end
 
 function luaqub:escapeName(name)

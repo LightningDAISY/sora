@@ -23,9 +23,10 @@
 local ControllerConfig = {
 	["/"]       = { role = 10, authType = "user" },
 	["/admin/"] = { role = 10, authType = "admin" },
+	["/user/"]  = { role = 10 },
 	["/docs/"]  = { role = 10 },
 	["/setup/"] = { role = 10 },
-	["/file/"]  = { role = 10 },
+	["/file/"]  = { role = 10, authType = "user" },
 }
 
 _G.BaseDir = "/var/www/sora"
@@ -43,7 +44,7 @@ local AuthTypes = {
 	admin = {
 		session  = {
 			method         = "_getAdminSession",
-			idColumnName   = "admin_id",
+			idColumnName   = "adminId",
 			roleColumnName = "role",
 		},
 		auth = {
@@ -57,7 +58,7 @@ local AuthTypes = {
 	user = {
 		session  = {
 			method         = "_getUserSession",
-			idColumnName   = "user_id",
+			idColumnName   = "userId",
 			roleColumnName = "role",
 		},
 		auth = {
@@ -109,7 +110,6 @@ local function main()
 
 	-- auth begin
 	local userId = nil
-	
 	if authType then
 		if not AuthTypes[authType] then
 			throw(
@@ -118,8 +118,11 @@ local function main()
 			)
 		end
 		local methodName = AuthTypes[authType].auth.method
-
+		if not controller[methodName] then
+			throw("auth method is not found - authTypeを指定する場合、controller.user.baseをコントローラのparentにしてください")
+		end
 		local sessionRecord = controller[methodName](controller,AuthTypes[authType],params)
+
 		-- 未認証時リダイレクト済(なので何もせず帰る)
 		-- (fallback未登録ならリダイレクトも無し)
 		-- (controller.isLoginをnilにするだけ)
@@ -136,10 +139,10 @@ local function main()
 				controller.user = controller[methodName](controller, userId)
 			end
 			-- set projectID
-			if sessionRecord.project_id then
-				controller.projectId = sessionRecord.project_id
+			if sessionRecord.projectId then
+				controller.projectId = sessionRecord.projectId
 				if userId then
-					controller.user.project_id = controller.projectId
+					controller.user.projectId = controller.projectId
 				end
 			end
 		end
@@ -147,9 +150,18 @@ local function main()
 	-- auth end
 
 	local newController = controller[method](controller,params)
+	if authType == "user" then
+		if controller.user and controller.user.userId and controller.user.projectId then
+			controller:_setUserSession(
+				controller.user.userId,
+				controller.user.projectId
+			)
+		end
+	end
+
 	if newController and newController.overwrite then controller = newController end
 	local SoraView = require "sora.view"
-	if not controller.stash.userId then controller.stash.userId   = userId   end
+	if userId and not controller.stash.userId then controller.stash.userId = userId end
 	local view = SoraView:new(req, controller)
 	view:render()
 end

@@ -64,16 +64,16 @@
 		}
 	},
 
-	/************
-	 * 認証周り *
-	 ************/
+	/******************
+	 * ユーザ認証周り *
+	 ******************/
 	"auth" : {
 		// ログインフォームURI
 		"userLoginURI" : "/sora/auth/user/login",
 		// 対象外URI
 		"userExcludeURI" : "/auth/",
 		// ユーザログイン後の遷移先(トップページ)
-		"userRedirectURI" : "/sora/",
+		"userRedirectURI" : "/sora/file",
 		// ユーザ権限エラーの遷移先
 		"userForbiddenURI" : "/sora/auth/user/forbidden",
 		// ユーザパスワードをハッシュ化する (true/false)
@@ -91,9 +91,11 @@
 		// セッションID乱数の最大値
 		"maxOfDigit" : 9999999999,
 		// セッションCookieのpath
-		"path" : "/",
+		"path" : "/sora/",
 		// セッションの有効期限(秒)
-		"expireSec" : 36000
+		"expireSec" : 36000,
+		// JWTトークンの秘密鍵
+		"jwtSecret" : "xxxxxx"
 	},
 	"template" : {
 		// resty-templateのキャッシュ設定

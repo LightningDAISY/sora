@@ -7,7 +7,8 @@ function C.new(o, req)
 	o = o or {}
 	o.req = req
 	o.fileManager = FileManager:new(req.format)
-	local ParentController = require "sora.controller"
+	--local ParentController = require "sora.controller"
+	local ParentController = require "controllers.user.base"
 	local parent = ParentController:new()
 	setmetatable(
 		o,
@@ -21,7 +22,9 @@ end
 function C:index(params)
 	self.stash.requestPath = "/" .. table.concat(params, "/")
 	self.stash.baseUri = self.config.uri.file.manager
-	local methodUpper = self.req.method:upper() 
+	self.stash.user = self.user
+	local methodUpper = self.req.method:upper()
+
 	if "GET" == methodUpper then
 		self.templateFileName = "file/index.tpl"
 	elseif "POST" == methodUpper then

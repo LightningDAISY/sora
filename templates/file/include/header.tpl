@@ -11,4 +11,15 @@
 		</script>
 	</head>
 	<body>
-
+	<div id="topmenu">
+		<div>
+			<? if user then ?>
+				<a href="/sora/auth/user/logout">logout</a>
+			<? else ?>
+				<a href="/sora/auth/user/login">login</a>
+			<? end ?>
+		</div>
+		<? if user then ?>
+			<div>こんにちは <% user.userName %>さん</div>
+		<? end ?>
+	</div>

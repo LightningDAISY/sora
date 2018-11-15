@@ -156,17 +156,17 @@ function SoraModelMySQL:selectQuery(sql)
 	if err then
 		self:_debugLog(err)
 	end
-	return res
+	return res or {}
 end
 
 --
 -- model:select(
 --   {                         --WHERE
 --     "viewer_id >", 100,
---     "updated_at >", "2016-09-30",
+--     "updatedAt >", "2016-09-30",
 --   },
 --   {                         --ORDER
---		"updated_at", "DESC"
+--		"updatedAt", "DESC"
 --   }
 --   100,                      --LIMIT
 --   0,                        --OFFSET
@@ -196,7 +196,7 @@ function SoraModelMySQL:select(wheres, orders, limit, offset, columns)
 		--   "ColumnName1 = ", "EscapeColumnValue",
 		--	  { "ColumnName2 = ", "plain" }, "PlainColumnValue",
 		-- }
-		if wheres[i]:match("expired_at[%s=><]") then
+		if wheres[i]:match("expiredAt[%s=><]") then
 			hasExpired = true
 		end
 		if type(wheres[i]) == "table" and wheres[i][2] == "plain" then
@@ -206,8 +206,8 @@ function SoraModelMySQL:select(wheres, orders, limit, offset, columns)
 		end
 	end
 	if not hasExpired then
-		builder:wherePlain("(expired_at = ", "0")
-		builder:wherePlain("expired_at > ", tostring(self:_getTime()) .. ")", "OR")
+		builder:wherePlain("(expiredAt = ", "0")
+		builder:wherePlain("expiredAt > ", tostring(self:_getTime()) .. ")", "OR")
 	end
 
 	-- LiMiT
@@ -244,19 +244,19 @@ function SoraModelMySQL:insert(record, isIgnoreErrors)
 	local SQLBuilder = require "sora.sqlbuilder"
 	local builder = SQLBuilder.new()
 
-	if not record.expired_at then
-		-- record.expired_at = self:_datetime()
-		record.expired_at = "0"
+	if not record.expiredAt then
+		-- record.expiredAt = self:_datetime()
+		record.expiredAt = "0"
 	end
 
-	if not record.created_at then
-		-- record.created_at = self:_datetime()
-		record.created_at = tostring(self:_getTime())
+	if not record.createdAt then
+		-- record.createdAt = self:_datetime()
+		record.createdAt = tostring(self:_getTime())
 	end
 
-	if not record.updated_at then
-		-- record.updated_at = self:_datetime()
-		record.updated_at = tostring(self:_getTime())
+	if not record.updatedAt then
+		-- record.updatedAt = self:_datetime()
+		record.updatedAt = tostring(self:_getTime())
 	end
 
 	builder:insert(
@@ -304,7 +304,7 @@ end
 -- model:update(
 --   {
 --     "viewer_id >", 100,
---     "updated_at >", "2016-09-30",
+--     "updatedAt >", "2016-09-30",
 --   },
 --   {
 --      viewer_id = 100,
@@ -324,9 +324,9 @@ function SoraModelMySQL:update(wheres, record)
 	end
 
 	-- SET
-	if not record.updated_at then
-		-- record.updated_at = self:datetime()
-		record.updated_at = tostring(self:_getTime())
+	if not record.updatedAt then
+		-- record.updatedAt = self:datetime()
+		record.updatedAt = tostring(self:_getTime())
 	end
 
 	builder:update(
@@ -342,7 +342,7 @@ end
 -- mode:delete(
 --   {
 --     "viewer_id =", 10
---     "updated_at <", self:_getTime()
+--     "updatedAt <", self:_getTime()
 --   }
 -- )
 --
