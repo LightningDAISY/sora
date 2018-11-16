@@ -15,8 +15,8 @@
 						Do you already have an account?
 					</p>
 					<ul class="list bare-list">
-						<li><label for="no"><input id="no" name="issignup" value="true" type="radio" class="radio" /> No, create this account now.</li>
-						<li><label for="yes"><input id="yes" name="issignup" value="" type="radio" class="radio" checked="checked" /> Yes, my password is:</li>
+						<li><label for="no"><input id="no" tabindex="4" name="issignup" value="true" type="radio" class="radio" /> No, create this account now.</li>
+						<li><label for="yes"><input id="yes" tabindex="5" name="issignup" value="" type="radio" class="radio" checked="checked" /> Yes, my password is:</li>
 					</ul>
 					<p>
 						<label for="login-password">Password</label>
