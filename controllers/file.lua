@@ -61,6 +61,11 @@ function C:index(params)
 		ngx.header["Content-Type"] = "application/json"
 		ngx.say(cjson.encode({ result = "OK" }))
 	elseif "OPTIONS" == methodUpper then
+		if not self.user then
+			ngx.header["Content-Type"] = "application/json"
+			ngx.say(cjson.encode({ result = "OK" }))
+			return
+		end
 		local reqParams = self.req:params()
 		local name = table.concat(params, "/")
 		self.fileManager:freeze(self.user.userId, name)
