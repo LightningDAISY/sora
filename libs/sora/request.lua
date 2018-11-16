@@ -158,7 +158,6 @@ end
 function SoraRequest:params(isMultipart)
 	isMultipart = isMultipart or self:isMultipart()
 	if isMultipart then
-		self:_errorLog("is multipart!")
 		return self:getMultipartParams()
 	end
 

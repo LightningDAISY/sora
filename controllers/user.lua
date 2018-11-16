@@ -16,6 +16,41 @@ function C.new(o, req)
 	return o
 end
 
+function C:mypage(params)
+	if not self.user then
+		return ngx.redirect(self.config.auth.userRedirectURI)
+	end
+	self.stash.user = self.user
+	self.templateFileName = "user/mypage.tpl"
+end
+
+function C:modify(params)
+	if not self.user then
+		return ngx.redirect(self.config.auth.userRedirectURI)
+	end
+
+	if self.req.method == "POST" then
+		local User = require "objects.user"
+		local user = User:new()
+		local params = self.req:params()
+		local newdata = {
+			userId      = self.user.userId,
+			projectId   = self.user.projectId,
+			userName    = params.userName,
+			nickname    = params.nickname,
+			loginId     = params.loginId,
+			password    = params.password,
+			mailAddress = params.mailAddress,
+			personality = params.personality,
+		}
+		user:modify(newdata)
+		self.stash.user = newdata
+	else
+		self.stash.user = self.user
+	end
+	self.templateFileName = "user/modify.tpl"
+end
+
 function C:info(params)
 	local nickname = params[1]
 	if not nickname then throw(400) end

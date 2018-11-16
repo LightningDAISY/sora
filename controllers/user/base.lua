@@ -28,6 +28,7 @@ function C:_setLogindata()
 	end
 	return true
 end
+
 function C:_getProject(projectId)
 	local Project = require "models.projectBase"
 	local model = Project:new()

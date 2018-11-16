@@ -23,7 +23,7 @@
 local ControllerConfig = {
 	["/"]       = { role = 10, authType = "user" },
 	["/admin/"] = { role = 10, authType = "admin" },
-	["/user/"]  = { role = 10 },
+	["/user/"]  = { role = 10, authType = "user" },
 	["/docs/"]  = { role = 10 },
 	["/setup/"] = { role = 10 },
 	["/file/"]  = { role = 10, authType = "user" },

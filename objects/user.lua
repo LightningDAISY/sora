@@ -21,6 +21,32 @@ function O:new(userId, projectId)
 	return ins
 end
 
+function O:getBase(userId)
+	userId = userId or self.userId
+	local UserBase = require 'models.userBase'
+	local base = UserBase:new()
+	local baseRows = base:select({ "userId = ", userId }, nil, 1)
+	return baseRows[1]
+end
+
+function O:getDetail(userId)
+	userId = userId or self.userId
+	local UserDetail = require 'models.userDetail'
+	local detail = UserBase:new()
+	local detailRows = detail:select({ "userId = ", userId }, nil, 1)
+	return detailRows[1]
+end
+
+function O:getInfo(userId)
+	userId = userId or self.userId
+	local base = self:getBase(userId) or {}
+	local detail = self:getDetail(userId) or {}
+	for key,val in pairs(detail) do
+		base[key] = val
+	end
+	return base
+end
+
 function O:_isEmpty(reqParams)
 	for i,key in ipairs({ "username", "password", "projectid", "nickname", "mailAddress" }) do
 		if not reqParams[key] then
@@ -145,16 +171,16 @@ function O:modify(params)
 	if not params.userId or not params.projectId then throw("ids are empty.") end
 
 	-- update userBase
-	if params.password and #params.password > 0 then
-		local UserBase = require 'models.userBase'
-		local base = UserBase:new()
-		local res = base:modify({
-			userId    = params.userId,
-			projectId = params.projectId,
-			password  = params.password,
-		})
-		if not res then throw(500, base.errorMessage) end
-	end
+	local UserBase = require 'models.userBase'
+	local base = UserBase:new()
+	if not params.password or params.password:len() < 1 then params.password = nil end
+	local res = base:modify({
+		userId    = params.userId,
+		userName  = params.userName,
+		projectId = params.projectId,
+		password  = params.password,
+	})
+	if not res then throw(500, base.errorMessage) end
 
 	-- TODO
 	--file copy /tmp to public_html/static/icon
@@ -195,3 +221,4 @@ function O:byNickname(nickname)
 end
 
 return O
+

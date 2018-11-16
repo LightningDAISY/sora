@@ -9,7 +9,7 @@
 					<legend>Sign in</legend>
 					<p>
 						<label for="login-username">Name</label>
-						<input id="login-username" name="username" value="<? if username then ?><% username %><? end ?>" type="text" placeholder="User Name" />
+						<input id="login-username" tabindex="1" name="username" value="<? if username then ?><% username %><? end ?>" type="text" placeholder="User Name" />
 					</p>
 					<p>
 						Do you already have an account?
@@ -20,10 +20,10 @@
 					</ul>
 					<p>
 						<label for="login-password">Password</label>
-						<input id="login-password" name="password" value="<? if password then ?><% password %><? end ?>" type="password" placeholder="Password" />
+						<input id="login-password" tabindex="2" name="password" value="<? if password then ?><% password %><? end ?>" type="password" placeholder="Password" />
 					</p>
 					<p class="is-center">
-						<input type="submit" value="sign in" />
+						<button type="submit" tabindex="3">sign in</button>
 					</p>
 				</fieldset>
 			</form>

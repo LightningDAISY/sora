@@ -158,7 +158,6 @@ end
 function SoraView:render()
 	-- templateFileName未定義ならtemplate使わない
 	if self.controller.templateFileName:len() <= 0 then return end
-
 	-- template-type by extensions
 	local ext = self.controller.templateFileName:match("[^%.]+$")
 	if ext then
