@@ -57,6 +57,14 @@ function renameNode()
 	)
 }
 
+function freezeNode()
+{
+	basicRequest(
+		"OPTIONS",
+		this.parentNode.getAttribute("path")
+	)
+}
+
 function removeNode()
 {
 	const filePath = this.parentNode.getAttribute("path")
@@ -110,7 +118,10 @@ function createButton(name,id,func)
 	td.appendChild(spanName)
 	td.setAttribute("id", id)
 	td.classList.add("clickable")
-	td.addEventListener("click", func)
+	if(func)
+	{
+		td.addEventListener("click", func)
+	}
 	return td
 }
 
@@ -145,15 +156,24 @@ function renderList(json, parentHeader)
 			a1.setAttribute("href", json[key].uri)
 			tr.setAttribute("uri",  json[key].uri)
 		}
-		console.log(json[key])
 		a1.innerText  = json[key].name
 		td2.innerText = json[key].permissionString
 		td2.classList.add("permission")
 		td1.appendChild(a1)
 		tr.appendChild(td1)
 		tr.appendChild(td2)
-		tr.appendChild(createButton("rename", id++, renameNode))
-		tr.appendChild(createButton("remove", id++, removeNode))
+		if(json[key].lockedBy)
+		{
+			tr.appendChild(createButton("-", id++))
+			tr.appendChild(createButton("-", id++))
+			tr.appendChild(createButton("unlock (locked by " + json[key].userNickname + ")" , id++, freezeNode))
+		}
+		else
+		{
+			tr.appendChild(createButton("rename", id++, renameNode))
+			tr.appendChild(createButton("remove", id++, removeNode))
+			tr.appendChild(createButton("lock",   id++, freezeNode))
+		}
 		if(json[key].isDirectory)
 		{
 			const td3 = document.createElement("td")

@@ -24,13 +24,14 @@ function FileManager:rename(oldName, newName)
 	local newPath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. newName
 	if self.ext then oldPath = oldPath .. self.ext end
 	oldPath = ngx.unescape_uri(oldPath)
+	if self:isFreezed(oldPath) then return end
 	return os.rename(oldPath, newPath)
 end
 
 function FileManager:remove(filePath)
 	local path = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. filePath
-	if self.ext then path = path .. self.ext end
 	path = ngx.unescape_uri(path)
+	if self:isFreezed(path) then return end
 	return os.remove(path)
 end
 
@@ -48,6 +49,92 @@ function FileManager:isDirectory(path)
 		return true
 	else
 		return false
+	end
+end
+
+function FileManager:nameByPath(path)
+	local itr = rex.split(path, "/")
+	local parts = {}
+	for part in itr do
+		if #part > 0 then
+			table.insert(parts, part)
+		end
+	end
+	local fname = table.remove(parts,#parts)
+	local dir   = "/" .. table.concat(parts, "/")
+	return dir, fname
+end
+
+function FileManager:freeze(userId, path)
+	path = ngx.unescape_uri(path)
+	if not userId then throw("userId is empty") end
+	local dir,fname = self:nameByPath(path)
+	local PathFreeze = require "models.pathFreeze"
+	local freeze = PathFreeze:new()
+
+	local records = freeze:select(
+		{
+			"path = ",     dir,
+			"fileName = ", fname,
+		}
+	)
+	if records and #records > 0 then
+		freeze:delete(
+			{
+				"path = ",     dir,
+				"fileName = ", fname,
+				"userId = ",   userId,
+			}
+		)
+	else
+		freeze:insert(
+			{
+				path     = dir,
+				fileName = fname,
+				userId   = userId,
+			},
+			true
+		)
+	end
+end
+
+function FileManager:getUserNickname(userId)
+	if not userId then return "" end
+	local UserDetail = require "models.userDetail"
+	local user = UserDetail:new()
+	local users = user:select({ "userId = ", userId })
+	if not users or #users < 1 then return "" end
+	return users[1].nickname
+end
+
+function FileManager:freezeList(path)
+	path = ngx.unescape_uri(path)
+	local PathFreeze = require "models.pathFreeze"
+	local freeze = PathFreeze:new()
+	local records = freeze:select({ "path = ", path })
+	local userNicknames = {}
+	local result = {}
+	for i,record in ipairs(records) do
+		local userId = record.userId
+		if not userNicknames["ID" .. userId] then
+			userNicknames["ID" .. userId] = self:getUserNickname(userId)
+		end
+		record.userNickname = userNicknames["ID" .. userId]
+		self:_errorLog(self:_dump(record))
+		result[record.fileName] = record
+	end
+	return result
+end
+
+function FileManager:isFreezed(path)
+	local dir,fname = self:nameByPath(path)
+	local PathFreeze = require "models.pathFreeze"
+	local freeze = PathFreeze:new()
+	local records = freeze:select({ "path = ", dir, "fileName = ", fname })
+	if not records or #records < 1 then
+		return
+	else
+		return 1
 	end
 end
 
@@ -92,6 +179,7 @@ end
 
 function FileManager:list(path)
 	local result = {}
+	local freezeTable = self:freezeList("/" .. path)
 	if path == "/" then path = "" end
 	path = ngx.unescape_uri(path)
 	local basePath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. path
@@ -131,6 +219,10 @@ function FileManager:list(path)
 				result[fileName].isDirectory = 1
 			else
 				result[fileName].size = attr.size
+			end
+			if freezeTable[fileName] then
+				result[fileName].lockedBy = freezeTable[fileName].userId
+				result[fileName].userNickname = freezeTable[fileName].userNickname
 			end
 		end
 	end
