@@ -148,7 +148,7 @@ function C:_deleteUserSession(sessionId)
 			{ name = self.config.session.uname, value = sessionId }
 		},
 		self.config.session.path,
-		ngx.cookie_time(0)
+		"Sat, 01-Jan-2000 00:00:00" -- 2000-01-01T00:00:00
 	)
 end
 

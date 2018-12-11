@@ -92,6 +92,7 @@ function createEmptyDirectory(id,parentHeader)
 {
 	const FM  = document.querySelector(id)
 	const a1  = document.createElement("a")
+	const i1  = document.createElement("i")
 	const td1 = document.createElement("td")
 	const td2 = document.createElement("td")
 	const td3 = document.createElement("td")
@@ -99,7 +100,9 @@ function createEmptyDirectory(id,parentHeader)
 	const tr  = document.createElement("tr")
 
 	a1.setAttribute("href", parentHeader)
-	a1.innerHTML = ".."
+	i1.classList.add("fas")
+	i1.classList.add("fa-chevron-up")
+	a1.appendChild(i1)
 	td1.appendChild(a1)
 	td2.innerText = " "
 	tr.appendChild(td1)
@@ -110,11 +113,15 @@ function createEmptyDirectory(id,parentHeader)
 	return FM
 }
 
-function createButton(name,id,func)
+function createButton(name,id,func, className)
 {
+	if(!className) { className = "is-info" }
 	const spanName = document.createElement("span")
 	const td = document.createElement("td")
 	spanName.innerText = name
+	spanName.classList.add("button")
+	spanName.classList.add("is-small")
+	spanName.classList.add(className)
 	td.appendChild(spanName)
 	td.setAttribute("id", id)
 	td.classList.add("clickable")
@@ -130,6 +137,8 @@ function renderPanel(parentUri)
 	const newDirectoryButton = document.createElement("button")
 	newDirectoryButton.innerText = "create a new directory"
 	newDirectoryButton.classList.add("create-new-directory")
+	newDirectoryButton.classList.add("button")
+	newDirectoryButton.classList.add("is-primary")
 	newDirectoryButton.addEventListener("click", newDirectory)
 	const panel = document.querySelector("#filePanel")
 	panel.appendChild(newDirectoryButton)
@@ -143,6 +152,8 @@ function renderList(json, parentHeader)
 	for(key in json)
 	{
 		const a1  = document.createElement("a")
+		const span1 = document.createElement("span")
+		const i1  = document.createElement("i")
 		const tr  = document.createElement("tr")
 		const td1 = document.createElement("td")
 		const td2 = document.createElement("td")
@@ -156,7 +167,6 @@ function renderList(json, parentHeader)
 			a1.setAttribute("href", json[key].uri)
 			tr.setAttribute("uri",  json[key].uri)
 		}
-		a1.innerText  = json[key].name
 		td2.innerText = json[key].permissionString
 		td2.classList.add("permission")
 		td1.appendChild(a1)
@@ -166,23 +176,31 @@ function renderList(json, parentHeader)
 		{
 			tr.appendChild(createButton("-", id++))
 			tr.appendChild(createButton("-", id++))
-			tr.appendChild(createButton("unlock (locked by " + json[key].userNickname + ")" , id++, freezeNode))
+			tr.appendChild(createButton("unlock (locked by " + json[key].userNickname + ")" , id++, freezeNode, "is-success"))
 		}
 		else
 		{
-			tr.appendChild(createButton("rename", id++, renameNode))
-			tr.appendChild(createButton("remove", id++, removeNode))
-			tr.appendChild(createButton("lock",   id++, freezeNode))
+			tr.appendChild(createButton("rename", id++, renameNode, "is-warning"))
+			tr.appendChild(createButton("remove", id++, removeNode, "is-danger"))
+			tr.appendChild(createButton("lock",   id++, freezeNode, "is-success"))
 		}
 		if(json[key].isDirectory)
 		{
 			const td3 = document.createElement("td")
+			i1.classList.add("fas")
+			i1.classList.add("fa-folder")
+			a1.appendChild(i1)
 			tr.appendChild(td3)
 		}
 		else
 		{
-			tr.appendChild(createButton("copy", id++, copyUri))
+			i1.classList.add("fas")
+			i1.classList.add("fa-file-alt")
+			a1.appendChild(i1)
+			tr.appendChild(createButton("copy", id++, copyUri, "is-info"))
 		}
+		span1.innerText  = " " + json[key].name
+		a1.appendChild(span1)
 		tr.setAttribute("path", baseUri + "/" + json[key].path)
 		tr.setAttribute("name", json[key].name)
 		FM.appendChild(tr)

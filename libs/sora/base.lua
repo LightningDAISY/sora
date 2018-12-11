@@ -129,11 +129,24 @@ function SoraBase:_errorLog(str)
 	self:_fileAppend(path, datetime .. str .. "\n")
 end
 
+function SoraBase:modExpireAt(datetime)
+    local year = datetime:match("-(%d+) ")
+    if not year then return datetime end
+    if tonumber(year) >= 2000 then return datetime end
+    local updated = datetime:gsub(
+        "-(%d+) ",
+        function (arg)
+            return "-" .. (arg + 2000) .. " "
+        end
+    )
+    return updated
+end
+
 function SoraBase:_setCookies(values, path, expireAt)
 	local cookieArray = {}
 	for i,cookie in ipairs(values) do
 		local str = cookie.name .. "=" .. cookie.value
-		if expireAt then str = str .. "; expires=" .. expireAt end
+		if expireAt then str = str .. "; expires=" .. self:modExpireAt(expireAt) end
 		if path then str = str .. "; path=" .. path end
 		table.insert(cookieArray, str)
 	end

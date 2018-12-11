@@ -120,7 +120,8 @@ value1
 function SoraRequest:getMultipartParams()
 	local boundary = self:getBoundary()
 	if not boundary then throw("cannot get boundary") end
-	local itr = rex.split(self:rawBody(), boundary)
+	local rawBody = self:rawBody()
+	local itr = rex.split(rawBody, boundary)
 	local body,name,fileName,startIndex,endIndex,capture
 	local result = {}
 	while true do

@@ -72,6 +72,22 @@ function O:_isExists(reqParams)
 		table.insert(self.errors, "the name is exists.")
 		return true
 	end
+
+	if reqParams.nickname and #reqParams.nickname > 0 then
+		local UserDetail = require 'models.userDetail'
+		local base = UserDetail:new()
+		local rows = base:select(
+			{
+				"nickname  =", reqParams.nickname,
+				"projectId =", reqParams.projectId,
+			},
+			nil,1
+		)
+		if #rows > 0 then
+			table.insert(self.errors, "the nickname is exists.")
+			return true
+		end
+	end
 end
 
 function O:signup(reqParams)

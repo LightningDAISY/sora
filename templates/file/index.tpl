@@ -4,7 +4,7 @@
 	<div id="filePanel">
 
 	</div>
-	<table id="fileList">
+	<table class="table" id="fileList">
 
 	</table>
 </div>

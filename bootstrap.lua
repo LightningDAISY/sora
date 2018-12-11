@@ -39,6 +39,7 @@ package.path =	_G.BaseDir .. "/libs/?.lua;" ..
 		package.path 
 
 require "sora.init"
+local cjson = require "cjson"
 
 local AuthTypes = {
 	admin = {
@@ -68,7 +69,7 @@ local AuthTypes = {
 			--fallback無指定なら未ログインでも処理続行。
 			--(ログインしなくても参照は可能な状態)
 			--self.isLoginがtrueならログイン済
-			--self.userにテーブルuser_baseの各フィールド。
+			--self.userにテーブルuserBaseの各フィールド。
 		},
 		status = {
 			method   = "_getUserInfo"
@@ -80,6 +81,10 @@ local AuthTypes = {
 -- どこからでも以下のコードでエラー画面に遷移できます。
 -- throw(500, "cannot connect to the database.")
 --
+-- 
+--
+-- throw(500, { message = "cannot connect to the database." })
+--
 function throw(code,str)
 	if type(code) ~= "number" then
 		str = code
@@ -89,6 +94,13 @@ function throw(code,str)
 	local SoraBase = require "sora.base"
 	local base = SoraBase:new()
 	str = str or ""
+
+	if type(str) == "table" then
+		str.statusCode = code
+		str.traceback = debug.traceback()
+		base:_errorLog(str.traceback)
+		error(str)
+	end
 	base:_errorLog(str .. " : " .. debug.traceback())
 	traceback = debug.traceback()
 	error("Exception: " .. str)
@@ -168,22 +180,28 @@ end
 
 local ok, err = pcall(main)
 if not ok then
-	local SoraRequest = require "sora.request"
-	local req = SoraRequest:new()
-	local SoraBase = require "sora.base"
-	local base = SoraBase:new()
-	local ErrorController = require(base.config.dir.controller .. ".errors")
-	local controller = ErrorController:new(req)
-	if not traceback then traceback = debug.traceback() end
+	if type(err) == "table" then
+		ngx.status = err.statusCode
+		ngx.say(cjson.encode(err))
+		ngx.exit(err.status or 500)
+	else
+		local SoraRequest = require "sora.request"
+		local req = SoraRequest:new()
+		local SoraBase = require "sora.base"
+		local base = SoraBase:new()
+		local ErrorController = require(base.config.dir.controller .. ".errors")
+		local controller = ErrorController:new(req)
+		if type(traceback) ~= "string" then traceback = debug.traceback() end
 
-	controller:index(
-		ngx.status,
-		err,
-		traceback
-	)
+		controller:index(
+			ngx.status,
+			err,
+			traceback
+		)
 
-	local SoraView = require "sora.view"
-	local view = SoraView:new(req, controller)
-	view:render()
+		local SoraView = require "sora.view"
+		local view = SoraView:new(req, controller)
+		view:render()
+	end
 end
 

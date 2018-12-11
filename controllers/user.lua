@@ -16,17 +16,54 @@ function C.new(o, req)
 	return o
 end
 
-function C:mypage(params)
-	if not self.user then
-		return ngx.redirect(self.config.auth.userRedirectURI)
+function C:info(params)
+	if self.req.format then self:_errorLog("FORMAT " .. self.req.format) end
+	ngx.header["Content-Type"] = "application/json"
+	if self.user then
+		local user = {}
+		for key,val in pairs(self.user) do
+			user[key] = val
+		end
+		user.password = nil
+		user.result = "OK"
+		ngx.say(cjson.encode(user))
+	else
+		throw(403, { result = "NG" })
 	end
-	self.stash.user = self.user
-	self.templateFileName = "user/mypage.tpl"
+end
+
+function C:mypage(params)
+	if self.req.format == ".json" then
+		ngx.header["Content-Type"] = "application/json"
+		if not self.user then
+			throw(403, { result = "NG" })
+		end
+		local user = {}
+		for key,val in pairs(self.user) do
+			user[key] = val
+		end
+		user.password = nil
+		user.result = "OK"
+		ngx.say(cjson.encode(user))
+	else
+		if not self.user then
+			return ngx.redirect(self.config.auth.userLoginURI)
+		end
+		self.stash.user = self.user
+		self.templateFileName = "user/mypage.tpl"
+	end
 end
 
 function C:modify(params)
-	if not self.user then
-		return ngx.redirect(self.config.auth.userRedirectURI)
+	if self.req.format == ".json" then
+		ngx.header["Content-Type"] = "application/json"
+		if not self.user then
+			throw(403, { result = "NG" })
+		end
+	else
+		if not self.user then
+			return ngx.redirect(self.config.auth.userLoginURI)
+		end
 	end
 
 	if self.req.method == "POST" then
@@ -44,53 +81,16 @@ function C:modify(params)
 			personality = params.personality,
 		}
 		user:modify(newdata)
-		self.stash.user = newdata
+		if self.req.format == ".json" then
+			ngx.say(cjson.encode({ result = "OK"}))
+			return
+		else
+			self.stash.user = newdata
+		end
 	else
 		self.stash.user = self.user
 	end
 	self.templateFileName = "user/modify.tpl"
-end
-
-function C:info(params)
-	local nickname = params[1]
-	if not nickname then throw(400) end
-	self:_setLogindata()
-	local User = require "objects.user"
-	local user = User:new()
-	self.stash.userdata = user:byNickname(nickname)
-	if not self.stash.userdata then throw(404) end
-	self.templateFileName = "user/info.tpl"
-end
-
-function C:profile(params)
-	if not self:_setLogindata() then
-		return ngx.redirect(self.config.auth.userRedirectURI)
-	end
-
-	if self.req.method == "POST" then
-		self.stash.reqParams = self.req:params("multipart")
-		if self.stash.reqParams and self.stash.reqParams.update then
-			local User = require "objects.user"
-			local user = User:new()
-			local res  = user:modify({
-				user_id     = self.user.user_id,
-				project_id  = self.user.project_id,
-				nickname    = self.stash.reqParams.nickname,
-				password    = self.stash.reqParams.password,
-				personality = self.stash.reqParams.personality,
-				icon        = self.stash.reqParams.icon,
-			})
-			if res then
-				self.stash.primaryMessages = { "updated" }
-			else
-				self.stash.errorMessages = user.errors
-			end
-		end
-	end
-	self.stash.reqParams = self.stash.reqParams or {}
-	self.stash.base   = self:_getUserBase()
-	self.stash.detail = self:_getUserDetail()
-	self.templateFileName = "mypage/profile.tpl"
 end
 
 return C

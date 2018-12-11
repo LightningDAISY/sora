@@ -63,7 +63,7 @@ function C:index(params)
 	elseif "OPTIONS" == methodUpper then
 		if not self.user then
 			ngx.header["Content-Type"] = "application/json"
-			ngx.say(cjson.encode({ result = "OK" }))
+			ngx.say(cjson.encode({ result = "NG" }))
 			return
 		end
 		local reqParams = self.req:params()

@@ -205,9 +205,19 @@ function SoraRouter:autoRouteCache()
 	local controllerClass = require(requirePath)
 	local controller = controllerClass:new(self.req)
 
+	--move format
+	local sepMethod,sepExtension = params[1]:match("([^/]+)(%.[^/]+)$")
+	if not sepMethod then
+		sepMethod = params[1]
+	end
+	if sepExtension then
+		self.req.format = extension
+	end
+
 	--find method
-	if controller[params[1]] then
-		method = params[1]
+	if controller[sepMethod] then
+		if sepExtension then self.req.format = sepExtension end
+		method = sepMethod
 		table.remove(params, 1)
 	elseif controller["index"] then
 		method = "index"
@@ -292,9 +302,24 @@ function SoraRouter:autoRoute()
 
 	util.reverse(params)
 
+	--move format
+	local sepMethod,sepExtension
+	if params[1] then
+		sepMethod,sepExtension = params[1]:match("([^/]+)(%.[^/]+)$")
+		if not sepMethod then
+			sepMethod = params[1]
+		end
+		if sepExtension then
+			self.req.format = extension
+		end
+	else
+		sepMethod = params[1]
+	end
+
 	--find method
-	if controller[params[1]] then
-		method = params[1]
+	if controller[sepMethod] then
+		if sepExtension then self.req.format = sepExtension end
+		method = sepMethod
 		table.remove(params, 1)
 	elseif controller["index"] then
 		method = "index"

@@ -57,6 +57,7 @@
 
 	// URI
 	"uri" : {
+		"host" : "127.0.0.1",
 		"base" : "/sora",
 		"file" : {
 			"manager" : "/sora/file",
@@ -73,7 +74,7 @@
 		// 対象外URI
 		"userExcludeURI" : "/auth/",
 		// ユーザログイン後の遷移先(トップページ)
-		"userRedirectURI" : "/sora/file",
+		"userRedirectURI" : "http://127.0.0.1:8080/file",
 		// ユーザ権限エラーの遷移先
 		"userForbiddenURI" : "/sora/auth/user/forbidden",
 		// ユーザパスワードをハッシュ化する (true/false)

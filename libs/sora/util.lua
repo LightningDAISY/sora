@@ -122,8 +122,10 @@ function removeSingleComment(str)
 	local rex = require("rex_pcre")
 	str = rex.gsub(
 		str,
-		"\\s*//(.*)",
-		""
+		"^\\s*//.*",
+		"",
+		nil,
+		"m"
 	)
 	return str
 end

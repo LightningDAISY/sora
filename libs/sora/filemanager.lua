@@ -21,10 +21,11 @@ function FileManager:rename(oldName, newName)
 	if rex.match(newName, "\\.\\.") then throw("invalid filename") end
 
 	local oldPath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. oldName
-	local newPath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. newName
+	local newPath = _G.BaseDir .. "/" .. self.config.dir.file .. newName
 	if self.ext then oldPath = oldPath .. self.ext end
 	oldPath = ngx.unescape_uri(oldPath)
 	if self:isFreezed(oldPath) then return end
+	self:moveFreezed("/" .. oldName, newName)
 	return os.rename(oldPath, newPath)
 end
 
@@ -107,6 +108,16 @@ function FileManager:getUserNickname(userId)
 	return users[1].nickname
 end
 
+function FileManager:moveFreezed(oldPath,newPath)
+	local PathFreeze = require "models.pathFreeze"
+	local freeze = PathFreeze:new()
+	return freeze:update(
+		{ "path = ", oldPath },
+		{ path = newPath }
+	)
+end
+
+
 function FileManager:freezeList(path)
 	path = ngx.unescape_uri(path)
 	local PathFreeze = require "models.pathFreeze"
@@ -166,6 +177,10 @@ function FileManager:upload(path, reqParams)
 	end
 	path = ngx.unescape_uri(path)
 
+	if self:isFreezed(path) then
+		throw ""
+	end
+
 	local filePath = _G.BaseDir .. "/" .. self.config.dir.file
 	if path:len() > 0 then
 		filePath = filePath .. "/" .. path
@@ -193,9 +208,9 @@ function FileManager:list(path)
 			local fullPath = basePath .. "/" .. fileName
 			result[fileName] = { name = fileName }
 			if path:len() > 0 then
-				result[fileName].path = path .. "/" .. fileName
+				result[fileName].path = "/" .. path .. "/" .. fileName
 			else
-				result[fileName].path = fileName
+				result[fileName].path = "/" .. fileName
 			end
 			local attr = lfs.attributes(fullPath)
 			local permission = attr.permissions
@@ -203,14 +218,16 @@ function FileManager:list(path)
 			result[fileName].uid = attr.uid
 			result[fileName].gid = attr.gid
 
-			result[fileName].fmuri = self.config.uri.file.manager
-			result[fileName].uri   = self.config.uri.file.public
+			--result[fileName].uri   = self.config.uri.file.public
+			--result[fileName].fmuri = self.config.uri.file.manager
+
 			if path:len() > 0 then
-				result[fileName].uri   = result[fileName].uri   .. "/" .. path
-				result[fileName].fmuri = result[fileName].fmuri .. "/" .. path
+				result[fileName].uri   = self.config.uri.file.public  .. result[fileName].path
+				result[fileName].fmuri = self.config.uri.file.manager .. result[fileName].path
+			else
+				result[fileName].uri   = self.config.uri.file.public   .. result[fileName].path
+				result[fileName].fmuri = self.config.uri.file.manager  .. result[fileName].path
 			end
-			result[fileName].uri   = result[fileName].uri   .. "/" .. fileName
-			result[fileName].fmuri = result[fileName].fmuri .. "/" .. fileName
 			result[fileName].permissionString = permission
 			result[fileName].permission = permission2int(permission)
 			result[fileName].isDirectory = 0

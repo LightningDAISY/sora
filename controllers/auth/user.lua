@@ -37,7 +37,12 @@ function C:setReqParams(reqParams)
 	self.stash.projectid    = reqParams.projectid
 	self.stash.nickname     = reqParams.nickname
 	self.stash.mailAddress  = reqParams.mailAddress
-	self.templateFileName   = "auth/user/signup.tpl"
+	if self.req.format == ".json" then
+		self.stash.result = "NG"
+		ngx.say(cjson.encode(self.stash))
+	else
+		self.templateFileName   = "auth/user/signup.tpl"
+	end
 end
 
 function C:_signup()
@@ -56,7 +61,12 @@ function C:_signup()
 	self.stash.password    = reqParams.password
 	self.stash.projectid   = reqParams.projectid
 	self.stash.mailAddress = reqParams.mailAddress
-	self.templateFileName  = "auth/user/login.tpl"
+	if self.req.format == ".json" then
+		self.stash.result = "OK"
+		ngx.say(cjson.encode(self.stash))
+	else
+		self.templateFileName  = "auth/user/login.tpl"
+	end
 end
 
 function C:_login(reqParams)
@@ -90,8 +100,12 @@ function C:login(params)
 			self:_login(reqParams)
 		end
 	end
-	self.stash.title="sign in"
-	self.templateFileName = "auth/user/login.tpl"
+	self.stash.title = "sign in"
+	if self.req.format == ".json" then
+		ngx.say(cjson.encode(self.stash))
+	else
+		self.templateFileName = "auth/user/login.tpl"
+	end
 end
 
 function C:logout()
