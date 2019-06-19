@@ -59,10 +59,17 @@ function SoraModelMySQL:mysqlConnect(isSingleton, config, isSetup)
 		port     = config.port,
 		database = config.schema,
 		user     = config.username,
+        charset  = "utf8",
 		password = config.password,
 		max_packet_size = 1024 * 1024
 	})
 	if not ok then
+        ngx.log(
+          ngx.ERR,
+          "mysql: cannot connect " .. config.username .. "@" .. config.hostname .. ":" .. config.port ..
+          " " .. config.password .. " " .. config.schema ..
+          " err:" .. err .. " errcode:" .. errcode .. " sqlstate:" .. sqlstate
+        )
 		-- セットアップ時のみ接続不可でもエラーにしない
 		if isSetup then
 			return false
@@ -243,6 +250,8 @@ end
 function SoraModelMySQL:insert(record, isIgnoreErrors)
 	local SQLBuilder = require "sora.sqlbuilder"
 	local builder = SQLBuilder.new()
+
+self:_errorLog(self:_dump(record))
 
 	if not record.expiredAt then
 		-- record.expiredAt = self:_datetime()

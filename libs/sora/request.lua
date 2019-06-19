@@ -125,21 +125,27 @@ function SoraRequest:getMultipartParams()
 	local body,name,fileName,startIndex,endIndex,capture
 	local result = {}
 	while true do
-		body = self:trim(itr())
-		if body == "--" then break end
+		--body = self:trim(itr())
+		body = itr()
+		if not body then break end
+		--body = rex.gsub(body, "\\s\\s\\z", "")
+		body = rex.gsub(body, "\\r\\n\\z", "")
 		if body ~= "" then
+		    if body == "--" then break end
 			startIndex, endIndex = rex.find(body, "\r\n\r\n")
-			local nameBlock = body:sub(1, startIndex - 1)
-			name     = rex.match(nameBlock, 'name="(.+?)"')
-			fileName = rex.match(nameBlock, 'filename="(.+?)"')
-			if fileName then
-				result[name] = {
-					name = fileName,
-					body = body:sub(endIndex + 1, body:len())
-				}
-			else
-				local value = body:sub(endIndex + 1, body:len())
-				result[name] = value
+            if startIndex and endIndex then
+				local nameBlock = body:sub(1, startIndex - 1)
+				name     = rex.match(nameBlock, 'name="(.+?)"')
+				fileName = rex.match(nameBlock, 'filename="(.+?)"')
+				if fileName then
+					result[name] = {
+						name = fileName,
+						body = body:sub(endIndex + 1, body:len())
+					}
+				else
+					local value = body:sub(endIndex + 1, body:len())
+					result[name] = value
+				end
 			end
 		end
 	end
@@ -158,6 +164,7 @@ end
 
 function SoraRequest:params(isMultipart)
 	isMultipart = isMultipart or self:isMultipart()
+
 	if isMultipart then
 		return self:getMultipartParams()
 	end

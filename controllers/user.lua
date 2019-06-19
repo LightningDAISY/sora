@@ -16,8 +16,18 @@ function C.new(o, req)
 	return o
 end
 
+function C:exists(params)
+	ngx.header["Content-Type"] = "application/json"
+	local User = require "objects.user"
+	local user = User:new()
+	if user:isExists(1,params[1]) then
+		ngx.say(cjson.encode({ result = "OK" }))
+	else
+		ngx.say(cjson.encode({ result = "NG" }))
+	end
+end
+
 function C:info(params)
-	if self.req.format then self:_errorLog("FORMAT " .. self.req.format) end
 	ngx.header["Content-Type"] = "application/json"
 	if self.user then
 		local user = {}
@@ -28,7 +38,7 @@ function C:info(params)
 		user.result = "OK"
 		ngx.say(cjson.encode(user))
 	else
-		throw(403, { result = "NG" })
+		ngx.say(cjson.encode({ result = "NG" }))
 	end
 end
 

@@ -48,7 +48,7 @@ function O:getInfo(userId)
 end
 
 function O:_isEmpty(reqParams)
-	for i,key in ipairs({ "username", "password", "projectid", "nickname", "mailAddress" }) do
+	for i,key in ipairs({ "username", "password", "projectid", "mailAddress" }) do
 		if not reqParams[key] then
 			table.insert(self.errors,  key .. " is not defined.")
 		elseif #reqParams[key] < 1 then
@@ -58,7 +58,7 @@ function O:_isEmpty(reqParams)
 	if #self.errors > 0 then return true end
 end
 
-function O:_isExists(reqParams)
+function O:isExists(reqParams)
 	local UserBase = require 'models.userBase'
 	local base = UserBase:new()
 	local rows = base:select(
@@ -69,7 +69,7 @@ function O:_isExists(reqParams)
 		nil,1
 	)
 	if #rows > 0 then
-		table.insert(self.errors, "the name is exists.")
+		table.insert(self.errors, "the LoginID is exists.")
 		return true
 	end
 
@@ -91,8 +91,20 @@ function O:_isExists(reqParams)
 end
 
 function O:signup(reqParams)
-	if self:_isEmpty(reqParams)  then return end
-	if self:_isExists(reqParams) then return end
+	if #self.config.auth.passPhrase > 0 then
+		if reqParams.passPhrase ~= self.config.auth.passPhrase then
+			self:_errorLog("invalid passPhrase " .. reqParams.passPhrase)
+			return
+		end
+	end
+	if self:_isEmpty(reqParams)  then
+		self:_errorLog("empty")
+		return
+	end
+	if self:isExists(reqParams) then
+		self:_errorLog("is exists")
+		return
+	end
 
 	-- create
 	local UserBase = require 'models.userBase'
@@ -106,10 +118,11 @@ function O:signup(reqParams)
 	)
 	if not res then
 		table.insert(self.errors, base.errorMessage)
+		self:_errorLog("userBase insert error " .. base.errorMessage)
 		return false
 	end
 
-	local userId = res.insertId
+	local userId = res.insert_id
 	local UserDetail = require 'models.userDetail'
 	local detail = UserDetail:new()
 	local detailRes = detail:insert({
@@ -119,7 +132,8 @@ function O:signup(reqParams)
 		mailAddress  = reqParams.mailAddress,
 		personality  = reqParams.personality,
 	})
-	if detailRes and detailRes.insertId then return res end
+	if detailRes and detailRes.insert_id then return res end
+	self:_errorLog("userDetail insert error ")
 
 	-- rollback
 	base:delete(

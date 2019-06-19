@@ -1,7 +1,8 @@
 local C = {}
 
-local Util = require "sora.util"
-local jwt  = require "resty.jwt"
+local Util  = require "sora.util"
+local cjson = require "cjson"
+local jwt   = require "resty.jwt"
 
 function C.new(o, req)
 	o = o or {}
@@ -24,7 +25,6 @@ function C:isNotEnough(params)
 	if	not params.username or
 		not params.projectid or
 		not params.password or
-		not params.nickname or
 		not params.mailAddress then
 		return true
 	end
@@ -46,26 +46,48 @@ function C:setReqParams(reqParams)
 end
 
 function C:_signup()
-
 	local reqParams = self.req:params()
 	if self:isNotEnough(reqParams) then return self:setReqParams(reqParams) end
+	self:_errorLog("SIGNUP")
 	local isSuccess = self.user:signup(reqParams)
 	if isSuccess then
 		self.stash.primaryMessages = { "created" }
 	else
-		self.stash.errorMessages = self.user.errors
-		return self:setReqParams(reqParams)
+		if self.req.format == ".json" then
+			ngx.say(cjson.encode({ reult = "NG" }))
+			return
+		else
+			self.stash.errorMessages = self.user.errors
+			return self:setReqParams(reqParams)
+		end
 	end
-	self.stash.title       = "sign in"
-	self.stash.username    = reqParams.username
-	self.stash.password    = reqParams.password
-	self.stash.projectid   = reqParams.projectid
-	self.stash.mailAddress = reqParams.mailAddress
 	if self.req.format == ".json" then
-		self.stash.result = "OK"
-		ngx.say(cjson.encode(self.stash))
+		ngx.say(cjson.encode({ result = "OK" }))
 	else
+		self.stash.title       = "sign in"
+		self.stash.username    = reqParams.username
+		self.stash.password    = reqParams.password
+		self.stash.projectid   = reqParams.projectid
+		self.stash.mailAddress = reqParams.mailAddress
 		self.templateFileName  = "auth/user/login.tpl"
+	end
+end
+
+function C:signup(params)
+	self:_signup()
+end
+
+function C:isexists(params)
+	local reqParams = self.req:params()
+	if self.user:isExists(reqParams) then
+		ngx.say(
+			cjson.encode({
+				result = "NG",
+				message = self.user.errors[1],
+			})
+		)
+	else
+		ngx.say(cjson.encode({ result = "OK" }))
 	end
 end
 
@@ -80,14 +102,24 @@ function C:_login(reqParams)
 			self.user.base.userId,
 			self.user.base.projectId
 		)
+		if self.req.format == ".json" then
+			self.stash.result = "OK"
+			return
+		end
 		return ngx.redirect(
 			self.config.auth.userRedirectURI
 		)
+	else
+		if self.req.format == ".json" then
+			self.stash.result = "NG"
+			return
+		end
 	end
 	self.stash.errorMessages = self.user.errors
 	self.stash.username  = reqParams.username
 	self.stash.password  = reqParams.password
 	self.stash.projectid = reqParams.projectid
+	self.stash.result    = "OK"
 end
 
 function C:login(params)

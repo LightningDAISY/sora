@@ -1,10 +1,13 @@
 local FileManager = {}
 local lfs = require "lfs"
 local rex = require "rex_pcre"
+local cjson = require "cjson"
+local DMP   = require 'diff_match_patch'
 
 function FileManager.new(o, ext)
 	o = o or {}
 	o.ext = ext
+	o.errorMessage = ''
 	local base = require "sora.base"
 	local parent = base:new()
 	setmetatable(
@@ -19,21 +22,171 @@ end
 function FileManager:rename(oldName, newName)
 	if rex.match(oldName, "\\.\\.") then throw("invalid filename") end
 	if rex.match(newName, "\\.\\.") then throw("invalid filename") end
-
 	local oldPath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. oldName
 	local newPath = _G.BaseDir .. "/" .. self.config.dir.file .. newName
-	if self.ext then oldPath = oldPath .. self.ext end
-	oldPath = ngx.unescape_uri(oldPath)
 	if self:isFreezed(oldPath) then return end
 	self:moveFreezed("/" .. oldName, newName)
+	self:moveHistory(oldName,newName)
 	return os.rename(oldPath, newPath)
 end
 
-function FileManager:remove(filePath)
-	local path = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. filePath
-	path = ngx.unescape_uri(path)
-	if self:isFreezed(path) then return end
-	return os.remove(path)
+function FileManager:isYaml(path)
+	if path:lower():match("%.ya?ml$") then return true end
+end
+
+function FileManager:getUserNickname(userId)
+	if not userId then return "" end
+	local UserDetail = require "models.userDetail"
+	local user = UserDetail:new()
+	local users = user:select({ "userId = ", userId })
+	if not users or #users < 1 then return "" end
+	return users[1].nickname
+end
+
+function FileManager:userId2nickname(rows)
+	local nicknames = {}
+	for i,row in ipairs(rows) do
+		if not nicknames["id" .. row.userId] then
+			nicknames["id" .. row.userId] = self:getUserNickname(row.userId)
+		end
+		row.nickname = nicknames["id" .. row.userId]
+	end
+end
+
+function FileManager:getHistories(path)
+	if not self:isYaml(path) then return {} end
+	local dirname,fname = self:nameByPath(path)
+	local PathHistory = require "models.pathHistory"
+	local history = PathHistory:new()
+	local records = history:select(
+		{ "path = ", dirname, "fileName = ", fname },
+		{ "id", "DESC" }
+	)
+	return records
+end
+
+function FileManager:pathByHistoryId(historyId)
+	local PathHistory = require "models.pathHistory"
+	local history = PathHistory:new()
+	local historyRecords = history:select({ "id = ", historyId })
+	if #historyRecords > 0 then
+		return historyRecords[1].path, historyRecords[1].fileName
+	else
+		return false, false
+	end
+end
+
+function FileManager:_diff2text(text, diff)
+	local patch = DMP.patch_make(diff)
+	local oldText = DMP.patch_apply(patch, text)
+	return oldText
+end
+
+function FileManager:rollbackTo(minHistoryId)
+
+	if not self.user or not self.user.userId then
+		self.errorMessage = "retry after login"
+		return
+	end
+
+	local path,fileName = self:pathByHistoryId(minHistoryId)
+	if not path or not fileName then
+		self.errorMessage = "invalid History-ID " .. minHistoryId
+		return
+	end
+
+	local PathHistory = require "models.pathHistory"
+	local history = PathHistory:new()
+	local historyRecords = history:select(
+		{
+			"path = ", path,
+			"fileName = ", fileName,
+			"id >= ", minHistoryId,
+		},
+		{
+			"id", "DESC"
+		}
+	)
+	local filePath = _G.BaseDir .. "/" .. 
+	                 self.config.dir.file .. "/" .. 
+					 path .. "/" .. fileName
+	local currentBody = self:fread(filePath)
+	local body = currentBody
+	if not body then
+		self.errorMessage = "file " .. fileName .. " is not found."
+		return
+	end
+
+	-- rollback begin
+	for i,historyRecord in ipairs(historyRecords) do
+		body = self:_diff2text(
+			body,
+			cjson.decode(
+				historyRecord.diff
+			)
+		)
+	end
+	--rollback end
+
+	-- add a new history begin
+	local diff =  DMP.diff_main(body, currentBody)
+	if #diff > 1 then
+		history:add({
+			path       = path,
+			fileName   = fileName,
+			diff       = cjson.encode(diff),
+			userId     = self.user.userId,
+		})
+	end
+	-- add a new history end
+
+	local file = io.open(filePath, "w")
+	if not file then throw("cannot write " .. filePath) end
+	file:write(body)
+	file:close()
+	return true
+end
+
+function FileManager:getPreviews(path)
+	local histories = self:getHistories(path)
+	if not histories then return end
+	local filePath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. path
+	local previews = {}
+	for i,history in ipairs(histories) do
+		--local diffStruct = cjson.decode(history.diff)
+		--local patch = DMP.patch_make(diffStruct)
+		--local text = DMP.patch_toText(patch)
+		--local text = DMP.diff_prettyHtml(diffStruct)
+        local text = DMP.diff_prettyHtml(cjson.decode(history.diff))
+		text = rex.gsub(
+			text,
+			"\n",
+			"<br />"
+		)
+
+		table.insert(previews, {
+			id     = history.id,
+			body   = text:gsub("&para;", ""),
+			userId = history.userId,
+			time   = history.updatedAt,
+		})
+	end
+	return previews
+end
+
+function FileManager:deleteHistory(path)
+	local PathHistory = require "models.pathHistory"
+	local history = PathHistory:new()
+	local dir, file = self:nameByPath(path)
+	self:_errorLog(dir .. " : " .. file)
+	return history:delete({ "path = ", dir, "fileName = ", file })
+end
+
+function FileManager:remove(path)
+	local filePath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. path
+	if self:isFreezed(filePath) then return end
+	self:deleteHistory(path)
+	return os.remove(filePath)
 end
 
 function FileManager:newDirectory(directoryPath)
@@ -67,7 +220,6 @@ function FileManager:nameByPath(path)
 end
 
 function FileManager:freeze(userId, path)
-	path = ngx.unescape_uri(path)
 	if not userId then throw("userId is empty") end
 	local dir,fname = self:nameByPath(path)
 	local PathFreeze = require "models.pathFreeze"
@@ -99,15 +251,6 @@ function FileManager:freeze(userId, path)
 	end
 end
 
-function FileManager:getUserNickname(userId)
-	if not userId then return "" end
-	local UserDetail = require "models.userDetail"
-	local user = UserDetail:new()
-	local users = user:select({ "userId = ", userId })
-	if not users or #users < 1 then return "" end
-	return users[1].nickname
-end
-
 function FileManager:moveFreezed(oldPath,newPath)
 	local PathFreeze = require "models.pathFreeze"
 	local freeze = PathFreeze:new()
@@ -117,6 +260,16 @@ function FileManager:moveFreezed(oldPath,newPath)
 	)
 end
 
+function FileManager:moveHistory(oldPath,newPath)
+	local PathHistory = require "models.pathHistory"
+	local history = PathHistory:new()
+	local oldDir, oldFile = self:nameByPath(oldPath)
+	local newDir, newFile = self:nameByPath(newPath)
+	return history:update(
+		{ "path = ", oldDir, "fileName = ", oldFile },
+		{ path  =    newDir,  fileName =   newFile }
+	)
+end
 
 function FileManager:freezeList(path)
 	path = ngx.unescape_uri(path)
@@ -171,6 +324,52 @@ local function permission2int(str)
 	return result:sub(1,3)
 end
 
+function FileManager:newFile(filePath, fileBody)
+	filePath = ngx.unescape_uri(filePath)
+	if not self.user then
+		throw(403, "retry after login")
+	end
+	filePath = _G.BaseDir .. "/" .. self.config.dir.file .. "/" .. filePath
+	if self:isFreezed(filePath) then
+		throw(403, "is locked")
+	end
+	local fh = io.open(filePath, "w")
+	if not fh then throw("cannot write " .. filePath) end
+	fh:write(fileBody)
+	return fh:close()
+end
+
+function FileManager:isExists(path)
+	local file = io.open(path, "r")
+	if not file then return end
+	file:close()
+	return true
+end
+
+function FileManager:fread(path)
+	local file = io.open(path, "r")
+	if not file then return end
+	local fbody = file:read("*a")
+	file:close()
+	return fbody
+end
+
+function FileManager:setHistory(path, oldBody, newBody)
+	local diff = DMP.diff_main(newBody, oldBody)
+	if #diff < 2 then return end -- not modified
+	local PathHistory = require "models.pathHistory"
+	local history = PathHistory:new()
+
+	local dir,fname = self:nameByPath(path)
+	history:insert({
+		path      = dir,
+		fileName  = fname,
+		userId    = self.user.userId,
+		diff      = cjson.encode(diff),
+	})
+	return true
+end
+
 function FileManager:upload(path, reqParams)
 	if not reqParams or not reqParams.newFile or not reqParams.newFile.name then
 		throw "newFile is empty"
@@ -178,7 +377,7 @@ function FileManager:upload(path, reqParams)
 	path = ngx.unescape_uri(path)
 
 	if self:isFreezed(path) then
-		throw ""
+		throw(403, "is locked")
 	end
 
 	local filePath = _G.BaseDir .. "/" .. self.config.dir.file
@@ -186,6 +385,20 @@ function FileManager:upload(path, reqParams)
 		filePath = filePath .. "/" .. path
 	end
 	filePath = filePath .. "/" .. reqParams.newFile.name
+
+	-- History begin
+	if self:isYaml(filePath) then
+		reqParams.newFile.body = reqParams.newFile.body:gsub('\r\n', '\n'):gsub('\r', '\n')
+		if self:isExists(filePath) then
+			self:setHistory(
+				path .. '/' .. reqParams.newFile.name,
+				self:fread(filePath),
+				reqParams.newFile.body
+			)
+		end
+	end
+	-- History end
+
 	local file = io.open(filePath, "w")
 	if not file then throw("cannot write " .. filePath) end
 	file:write(reqParams.newFile.body)

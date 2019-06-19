@@ -124,6 +124,7 @@ function SoraBase:_debugLog(str)
 end
 
 function SoraBase:_errorLog(str)
+	if not str then str = "(nil)" end
 	local path = _G.BaseDir .. "/" .. self.config.dir.log .. "/" .. self.config.file.log.error
 	local datetime = "[" .. self:_datetime() .. "] "
 	self:_fileAppend(path, datetime .. str .. "\n")
@@ -154,7 +155,9 @@ function SoraBase:_setCookies(values, path, expireAt)
 end
 
 function SoraBase:_getCookies()
+self:_errorLog("GET COOKIE")
 	local cookie = ngx.req.get_headers()["Cookie"]
+self:_errorLog(self:_dump(cookie))
 	if not cookie then return {} end
 	local util = require "sora.util"
 	local rows = util.split(cookie, "%s*;%s*")

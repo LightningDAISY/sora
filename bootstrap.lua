@@ -21,12 +21,15 @@
 -- 全てリクエストURIとして有効になります。
 --
 local ControllerConfig = {
-	["/"]       = { role = 10, authType = "user" },
-	["/admin/"] = { role = 10, authType = "admin" },
-	["/user/"]  = { role = 10, authType = "user" },
-	["/docs/"]  = { role = 10 },
-	["/setup/"] = { role = 10 },
-	["/file/"]  = { role = 10, authType = "user" },
+	["/"]         = { role = 10, authType = "user" },
+	["/admin/"]   = { role = 10, authType = "admin" },
+	["/user/"]    = { role = 10, authType = "user" },
+	["/wiki/"]    = { role = 10, authType = "user" },
+	["/docs/"]    = { role = 10 },
+	["/ws/"]      = { role = 10 },
+	["/setup/"]   = { role = 10 },
+	["/contact/"] = { role = 10 },
+	["/file/"]    = { role = 10, authType = "user" },
 }
 
 _G.BaseDir = "/var/www/sora"
@@ -96,6 +99,7 @@ function throw(code,str)
 	str = str or ""
 
 	if type(str) == "table" then
+		str.result = "NG"
 		str.statusCode = code
 		str.traceback = debug.traceback()
 		base:_errorLog(str.traceback)

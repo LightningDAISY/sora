@@ -10,3 +10,10 @@ luarocks install luafilesystem
 # Regex
 luarocks install lrexlib-pcre
 
+# if not exits libpcre.o & libpcre.so
+wget https://ftp.pcre.org/pub/pcre/pcre-8.43.tar.gz
+tar zxvf pcre-8.43.tar.gz
+cd pcre-8.43
+./configure --enable-utf
+make
+make install
