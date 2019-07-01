@@ -1,0 +1,55 @@
+[site]
+title = "sora"
+subtitle = "luajit framework"
+
+[environment]
+# devel | production
+mode = "devel"
+
+[uri]
+#
+# URI(/api/example/add)とController(controller/example.lua)の紐付けに使います。
+# 端的に言って content_by_lua_file を書いた場所の location をそのまま書き写します。
+#
+# location /api {
+#   content_by_lua_file /var/www/sora/bootstrap.lua;
+# }
+#
+base = "/api"
+fileManager = "/api/file"
+filePublic  = "/static/files"
+
+[dir]
+#
+# 以降は全てngx.var.baseDir (bootstrap.luaのあるディレクトリ)からの相対パスです
+#
+# ログファイルの位置
+log = "/logs"
+
+# 公開ファイルの位置
+public = "/public_html"
+
+# 静的ファイルを示す識別子(/static/の下なら静的ファイル)
+static = "/static"
+
+# ファイルマネージャのルート
+file = "/public_html/static/files"
+
+# テンポラリ
+temp = "/temp"
+
+# フレームワークのlibs
+# (PATHを幾つも通したくないので全部入れてます)
+ownLibs = "libs"
+
+# ファイル置き場 (dir.ownLibs直下)
+controller = "controllers"
+model      = "models"
+template   = "templates"
+
+[file]
+# ログファイル3つ (dir.log直下)
+accessLog = "app.access.log"
+errorLog  = "app.error.log"
+debugLog  = "app.debug.log"
+

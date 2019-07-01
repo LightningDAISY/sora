@@ -1,14 +1,14 @@
 # resty redis
-luarocks install luarestyredis
+sudo /usr/local/openresty/bin/luarocks install luarestyredis
 
 # template
-luarocks install template
+sudo /usr/local/openresty/bin/luarocks install template
 
 # FS
-luarocks install luafilesystem
+sudo /usr/local/openresty/bin/luarocks install luafilesystem
 
 # Regex
-luarocks install lrexlib-pcre
+sudo /usr/local/openresty/bin/luarocks install lrexlib-pcre
 
 # if not exits libpcre.o & libpcre.so
 wget https://ftp.pcre.org/pub/pcre/pcre-8.43.tar.gz
@@ -16,4 +16,4 @@ tar zxvf pcre-8.43.tar.gz
 cd pcre-8.43
 ./configure --enable-utf
 make
-make install
+sudo make install

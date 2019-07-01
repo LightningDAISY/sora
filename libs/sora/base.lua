@@ -5,7 +5,7 @@ function SoraBase.new(o, req)
 	if req then o.req = req end
 	local SoraConfig = require "sora.config"
 	local config = SoraConfig:new()
-	o.config = config:loadconfig()
+	o.config = config:parse()
 	o.time = 0
 	return o
 end
@@ -53,7 +53,7 @@ function SoraBase:_dump(obj)
 end
 
 function SoraBase:_loadProjectConfig(projectName)
-	local confName = _G.BaseDir .. "/" .. self.config.api.json
+	local confName = ngx.var.baseDir .. "/" .. self.config.api.json
 	local util = require "sora.util"
 	local confStruct = util.loadJSON(confName)[projectName]
 	if not confStruct then throw("config." .. projectName .. " is not found") end
@@ -118,14 +118,15 @@ function SoraBase:_tablesave(dir, tbl)
 end
 
 function SoraBase:_debugLog(str)
-	local path = _G.BaseDir .. "/" .. self.config.dir.log .. "/" .. self.config.file.log.debug
+    str = str or "(nil)"
+	local path = ngx.var.baseDir .. "/" .. self.config.dir.log .. "/" .. self.config.file.debugLog
 	local datetime = "[" .. self:_datetime() .. "]\n"
 	self:_fileAppend(path, datetime .. str .. "\n")
 end
 
 function SoraBase:_errorLog(str)
 	if not str then str = "(nil)" end
-	local path = _G.BaseDir .. "/" .. self.config.dir.log .. "/" .. self.config.file.log.error
+	local path = ngx.var.baseDir .. "/" .. self.config.dir.log .. "/" .. self.config.file.errorLog
 	local datetime = "[" .. self:_datetime() .. "] "
 	self:_fileAppend(path, datetime .. str .. "\n")
 end
@@ -155,9 +156,7 @@ function SoraBase:_setCookies(values, path, expireAt)
 end
 
 function SoraBase:_getCookies()
-self:_errorLog("GET COOKIE")
 	local cookie = ngx.req.get_headers()["Cookie"]
-self:_errorLog(self:_dump(cookie))
 	if not cookie then return {} end
 	local util = require "sora.util"
 	local rows = util.split(cookie, "%s*;%s*")

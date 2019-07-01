@@ -1,14 +1,16 @@
 local SoraConfig = {}
+local toml = require "toml"
+local util = require "sora.util"
 
 function SoraConfig.new(o)
-	o = o or {}
-	return o
+  o = o or {}
+  return o
 end
 
-function SoraConfig:loadconfig(filename)
-	filename = filename or _G.BaseDir .. "/etc/config.js"
-	local util = require("sora.util")
-	return util.loadJS(filename)
+function SoraConfig:parse(filePath)
+  filePath = filePath or ngx.var.baseDir .. "/etc/config.toml"
+  local fileBody = util.loadFile(filePath)
+  return toml.parse(fileBody)
 end
 
 return SoraConfig
