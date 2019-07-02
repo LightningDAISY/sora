@@ -7,8 +7,7 @@ function FileManager.new(o, ext)
   o = o or {}
   o.ext = ext
   o.errorMessage = ''
-  local base = require "sora.base"
-  local parent = base:new()
+  local parent = require("sora.base"):new()
   setmetatable(
     o,
     {
@@ -20,16 +19,6 @@ end
 
 function FileManager:isYaml(path)
   if path:lower():match("%.ya?ml$") then return true end
-end
-
-function FileManager:isDirectory(path)
-  path = _G.BaseDir .. "/" .. self.config.dir.file .. path
-  local attr = lfs.attributes(path)
-  if(attr.mode == "directory") then
-    return true
-  else
-    return false
-  end
 end
 
 function FileManager:nameByPath(path)
@@ -65,21 +54,6 @@ local function permission2int(str)
     end
   end
   return result:sub(1,3)
-end
-
-function FileManager:isExists(path)
-  local file = io.open(path, "r")
-  if not file then return end
-  file:close()
-  return true
-end
-
-function FileManager:fread(path)
-  local file = io.open(path, "r")
-  if not file then return end
-  local fbody = file:read("*a")
-  file:close()
-  return fbody
 end
 
 function FileManager:list(path)
