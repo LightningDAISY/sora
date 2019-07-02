@@ -19,6 +19,22 @@ base = "/api"
 fileManager = "/api/file"
 filePublic  = "/static/files"
 
+[cors]
+# Access-Control-Allow-Methods
+allowMethods = "GET,POST,PUT,DELETE,OPTIONS"
+
+# Access-Control-Allow-Origin
+# 何か書けばリクエストヘッダのOriginの値をそのまま返します。
+# (つまりtrueに書き換えても同じです)
+allowOrigin = "*"
+
+# Access-Control-Allow-Headers
+allowHeaders = "Content-Type"
+
+# Access-Control-Max-Age
+maxAge = 86400
+
+
 [dir]
 #
 # 以降は全てngx.var.baseDir (bootstrap.luaのあるディレクトリ)からの相対パスです
