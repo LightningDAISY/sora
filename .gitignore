@@ -1,6 +1,6 @@
-temp/*
-logs/*.log
-public_html/swagger/ui/*
-public_html/swagger/editor/*
-etc/config.js
+/temp/*
+/logs/*.log
+/public_html/swagger/ui/*
+/public_html/swagger/editor/*
+/etc/config.js
 
